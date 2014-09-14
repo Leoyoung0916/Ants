@@ -27,9 +27,14 @@ class Ant(object):
 
  	def updateants(self):
 
+ 		'''走之前留下信息素'''
  		self.laypheromone()
+
+ 		'''去除原来所在点的蚂蚁'''
 	 	self.world.locationWithAnts[self.x][self.y].remove(self)
 	 	
+
+	 	'''蚂蚁移动'''
  		if not self.iffood:
 	 		if self.next == 0:
 	 			self.x+=1 #向右前进
@@ -41,6 +46,8 @@ class Ant(object):
 	 		else:
 	 			self.y-=1 #向下前进
 
+
+	 	'''更新world中的locationWithAnds'''
 	 	try:
 	 		self.world.locationWithAnts[self.x][self.y].append(self)
 	 	except:
@@ -48,6 +55,21 @@ class Ant(object):
 	 			self.world.locationWithAnts[self.x].update({self.y : [self]})
 	 		except:
 	 			self.world.locationWithAnts.update({self.x:{self.y : [self]}})
+
+
+	 	''' 寻觅食物 '''
+	 	try:
+	 		self.world.locationWithFood[self.x][self.y] -= 1
+	 		self.iffood = 1
+	 	except:
+	 		pass
+
+	 	'''回到洞穴'''
+	 	if self.iffood == 1:
+	 		if self.x == 0 and self.y == 0 :
+	 			self.world.locationWithAnts[0][0].remove(self)
+
+
 
 	def decide(self):
 		''' 我试图用字典来存储world上的pheromones，如果找不到对应的位置（没有记载），说明没有信息素'''
@@ -74,25 +96,22 @@ class Ant(object):
 
 		'''这是一个奇怪的算法，当然，可以调整。'''
 
-		# print " compare ",pheromone0,pheromone1
 		dice = random.random()
 		try:
 			prob = pheromone0 **2 / float( pheromone0**2 + pheromone1**2)
 		except:
 			prob = 0.5
-		# print  "dice & prob" , dice, prob
-
-
 		if  prob > dice:
 			self.next = 0
 		else:
 			self.next = 1
 
+
 	def laypheromone(self):
 		if not self.iffood:
 			pheromone = 1
 		else:
-			pheromone = 2
+			pheromone = 5
 		try:
 			self.world.pheromone[self.x][self.y] += pheromone
 		except:
@@ -102,16 +121,16 @@ class Ant(object):
 				self.world.pheromone.update({self.x : {self.y: pheromone}})
 
 
-class Location(object):
-	"""docstring for Location"""
-	def __init__(self,world,x,y,pheromone,foodnum = 0):
-		super(Location, self).__init__()
-		self.world = world
-		self.x = x
-		self.y = y
-		self.foodnum = foodnum
-		self.pheromone = pheromone
-		self.antlist = []
+# class Location(object):
+# 	"""docstring for Location"""
+# 	def __init__(self,world,x,y,pheromone,foodnum = 0):
+# 		super(Location, self).__init__()
+# 		self.world = world
+# 		self.x = x
+# 		self.y = y
+# 		self.foodnum = foodnum
+# 		self.pheromone = pheromone
+# 		self.antlist = []
 
 class World(object):
 	"""docstring for World"""
@@ -119,6 +138,14 @@ class World(object):
 		super(World, self).__init__()
 		self.locationWithAnts = {}
 		self.pheromone = {}
+		self.ifvolatilize = False
+		self.locationWithFood = {}
+		
+
+
+	def setfood(self,foodnum=2000):
+		self.locationWithFood.update({40:{40:foodnum}})
+
 
 	def addAnts(self):
 		addnum = 10
@@ -136,7 +163,12 @@ class World(object):
 
 		for ant in tempantlist:
 			ant.updateants()
-		 
+
+		'''是否挥发？'''
+		if (self.ifvolatilize):
+			for x, subdict in self.pheromone.iteritems():
+				for y,pheromone in subdict.iteritems():
+					pheromone -= pheromone/30.0
 
 	def evolution(self,n):
 		steps = n
@@ -145,21 +177,32 @@ class World(object):
 			self.updateworld()
 
 	def displayworld(self):
+		antnum = 0
 		for x, subdict in self.locationWithAnts.iteritems():
 			for y,antlist in subdict.iteritems():
 				for ant in antlist:
+					antnum += 1
 					print ant.x,ant.y
+
+		print "ant number = ", antnum
 
 	def displaypheromone(self):
 		for x, subdict in self.pheromone.iteritems():
 			for y,pheromone in subdict.iteritems():
 				print "pheromone",x,y,pheromone
 
+	def drawWorldsAnts(self):
+		pass
+
+	def drawWorldsPheromone(self):
+		pass
+
 
 
 def main():
 	world = World()
-	world.evolution(20)
+	world.setfood()
+	world.evolution(200)
 	world.displayworld()
 
 
